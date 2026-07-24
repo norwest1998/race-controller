@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Official Race Controller</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; text-align: center; background: #f4f4f9; }
+    .card { background: white; padding: 15px; border-radius: 8px; margin: 15px auto; max-width: 450px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .status-box { font-size: 18px; font-weight: bold; color: #007bff; margin-top: 15px; }
+    
+    .btn { padding: 18px 25px; font-size: 20px; font-weight: bold; color: white; border: none; border-radius: 8px; cursor: pointer; margin-top: 15px; width: 85%; display: block; margin-left: auto; margin-right: auto; }
+    .start-btn { background: #28a745; }
+    .stop-btn { background: #dc3545; display: none; }
+
+    #debugConsole { 
+      background: #1e1e1e; color: #00ff66; font-family: monospace; font-size: 12px; 
+      text-align: left; padding: 10px; border-radius: 6px; height: 130px; 
+      overflow-y: auto; margin-top: 20px; word-break: break-all; 
+    }
+  </style>
+</head>
+<body>
+
+  <h2>⛵ Race <span id="raceNum">?</span> Official Controller</h2>
+
+  <div class="card">
+    <p><strong>Race Type:</strong> <span id="cfgType">Loading...</span></p>
+    <p><strong>Audio Option:</strong> <span id="cfgAudio">Loading...</span></p>
+    <p><strong>Max Handicap:</strong> <span id="cfgMaxHp">Loading...</span> sec</p>
+    <div id="status" class="status-box">Connecting to Google Sheets...</div>
+  </div>
+
+  <button id="startBtn" class="btn start-btn" onclick="initiateRaceAndRecord()" disabled>🚀 START RACE</button>
+  <button id="stopBtn" class="btn stop-btn" onclick="stopRaceAndProcess()">⏹️ STOP RACE & PROCESS AUDIO</button>
+
+  <audio id="audioPlayer" preload="auto" playsinline></audio>
+
+  <div class="card">
+    <strong>📋 Debug Log</strong>
+    <div id="debugConsole"></div>
+  </div>
+
+  <script>
+    // ⚠️ REPLACE THIS WITH YOUR DEPLOYED GOOGLE APPS SCRIPT EXEC URL
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec";
+    const AI_ENDPOINT_URL = "https://YOUR_AI_AGENT_ENDPOINT.com/analyze";
+
+    let raceConfig = null;
+    let mediaRecorder = null;
+    let recordedChunks = [];
+
+    function debugLog(msg) {
+      console.log(msg);
+      const consoleBox = document.getElementById('debugConsole');
+      if (consoleBox) {
+        consoleBox.innerHTML += `> ${msg}<br/>`;
+        consoleBox.scrollTop = consoleBox.scrollHeight;
+      }
+    }
+
+    window.onload = function() {
+      debugLog("Page loaded from GitHub Pages.");
+      fetchRaceConfig();
+    };
+
+    function fetchRaceConfig() {
+      debugLog("Fetching race config from Google Sheets backend...");
+      
+      fetch(GAS_WEB_APP_URL)
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === "success") {
+            raceConfig = data.config;
+            debugLog("✅ Config received for Race " + raceConfig.raceNumber);
+
+            document.getElementById('raceNum').innerText = raceConfig.raceNumber;
+            document.getElementById('cfgType').innerText = raceConfig.raceType ? raceConfig.raceType.toUpperCase() : "UNKNOWN";
+            document.getElementById('cfgAudio').innerText = raceConfig.audioFileOption;
+            document.getElementById('cfgMaxHp').innerText = raceConfig.maxHandicap;
+
+            document.getElementById('status').innerText = "Ready to Start";
+            document.getElementById('startBtn').disabled = false;
+          } else {
+            debugLog("❌ Backend Error: " + data.message);
+            document.getElementById('status').innerText = "❌ Error loading config";
+          }
+        })
+        .catch(err => {
+          debugLog("❌ Network Error: " + err);
+          document.getElementById('status').innerText = "❌ Connection Failed";
+        });
+    }
+
+    async function initiateRaceAndRecord() {
+      debugLog("User tapped START RACE.");
+      document.getElementById('status').innerText = "Requesting Microphone Access...";
+
+      try {
+        // Native iOS microphone permission request (works smoothly on GitHub domain)
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        debugLog("✅ Microphone access granted on iOS!");
+
+        document.getElementById('startBtn').style.display = "none";
+        document.getElementById('stopBtn').style.display = "block";
+
+        recordedChunks = [];
+        const options = MediaRecorder.isTypeSupported('audio/webm') ? { mimeType: 'audio/webm' } : {};
+        mediaRecorder = new MediaRecorder(stream, options);
+
+        mediaRecorder.ondataavailable = e => {
+          if (e.data.size > 0) recordedChunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = processAndSendAudio;
+        mediaRecorder.start();
+        debugLog("🎙️ Ambient audio recording active.");
+
+        playStartAudio();
+
+      } catch (err) {
+        debugLog("❌ Mic permission error: " + err);
+        document.getElementById('status').innerText = "❌ Mic Permission Denied";
+        alert("Microphone access is required to capture finish line audio.");
+      }
+    }
+
+    function playStartAudio() {
+      if (!raceConfig || !raceConfig.audioUrl) {
+        debugLog("⚠️ Audio URL missing.");
+        return;
+      }
+
+      const audio = document.getElementById('audioPlayer');
+      audio.src = raceConfig.audioUrl;
+
+      audio.play()
+        .then(() => {
+          debugLog("▶️ Countdown playing live over Bluetooth.");
+          document.getElementById('status').innerText = "🔴 Countdown Playing & Mic Recording Live...";
+        })
+        .catch(err => {
+          debugLog("⚠️ Audio play warning: " + err.message);
+        });
+
+      let duration = (raceConfig.raceType === 'Scratch') 
+        ? ((raceConfig.audioFileOption === "1") ? 60 : 120)
+        : (raceConfig.maxHandicap || 200);
+
+      setTimeout(() => {
+        audio.pause();
+        debugLog("Countdown sequence audio complete.");
+        document.getElementById('status').innerText = "Start sequence complete. Recording finish line audio...";
+      }, duration * 1000);
+    }
+
+    function stopRaceAndProcess() {
+      debugLog("Stop button clicked.");
+      document.getElementById('status').innerText = "Stopping ambient recording & preparing AI payload...";
+      
+      const audio = document.getElementById('audioPlayer');
+      audio.pause();
+      
+      if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+      }
+    }
+
+    function processAndSendAudio() {
+      debugLog(`Recorded ${recordedChunks.length} audio chunks.`);
+      
+      const mimeType = mediaRecorder.mimeType || 'audio/wav';
+      const blob = new Blob(recordedChunks, { type: mimeType });
+      const reader = new FileReader();
+
+      const promptInstructions = {
+        system_prompt: "You are an official race scorer. Analyze the provided ambient audio recording along with the given list of competitors.",
+        instructions: [
+          "1. Listen for finish line calls, sail number announcements, or horn blasts.",
+          "2. Determine the elapsed time in seconds for each finisher.",
+          "3. Separate finished boats from DNS and DNF boats.",
+          "4. Return strict JSON format: { 'results': [ {'sailNo': String, 'place': Number, 'elapsedTime': Number, 'handicap': Number} ], 'dnfList': [ String ] }"
+        ]
+      };
+
+      reader.readAsDataURL(blob);
+      reader.onloadend = function() {
+        debugLog("Audio converted to Base64. Sending to AI Endpoint...");
+        const base64Data = reader.result.split(',')[1];
+
+        fetch(AI_ENDPOINT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            raceNumber: raceConfig.raceNumber,
+            participants: raceConfig.participants,
+            prompt: promptInstructions,
+            media: base64Data,
+            mediaType: mimeType
+          })
+        })
+        .then(res => res.json())
+        .then(aiResults => {
+          debugLog("AI Response received. Posting to Google Sheet backend...");
+          
+          return fetch(GAS_WEB_APP_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({
+              raceNumber: raceConfig.raceNumber,
+              columnIndex: raceConfig.columnIndex,
+              results: aiResults.results,
+              dnfList: aiResults.dnfList
+            })
+          });
+        })
+        .then(res => res.json())
+        .then(sheetRes => {
+          debugLog("✅ Google Sheet Updated: " + sheetRes.message);
+          document.getElementById('status').innerText = "✅ " + sheetRes.message;
+        })
+        .catch(err => {
+          debugLog("❌ Error: " + err);
+          document.getElementById('status').innerText = "❌ Processing Error: " + err;
+        });
+      };
+    }
+  </script>
+</body>
+</html>
