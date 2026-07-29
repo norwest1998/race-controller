@@ -455,9 +455,55 @@
   </nav>
 </header>
 
-<a class="btn btn-primary" id="actionBtn" onclick="initiateSystem()">Enable Microphone→</a>
-<div id="status">Status: Waiting for user permission...</div>
-<audio id="audioPlayback" controls></audio>
+<main>
+  <!-- ============ HERO ============ -->
+  <section class="hero">
+    <div>
+      <div class="eyebrow"><span class="dot"></span> Race capture live</div>
+      <h1>Every race,<br><em>tracked by the second.</em></h1>
+      <p class="lede">
+        Results, standings and conditions for Sydney Maritime Modellers Club —
+        pulled live from the race book so the leaderboard is never out of date.
+      </p>
+      <div class="hero-actions">        
+        <a class="btn btn-primary" id="actionBtn" onclick="initiateSystem()">Enable Microphone→</a>
+        <div id="status">Status: Waiting for user permission...</div>
+        <audio id="audioPlayback" controls></audio>
+        <a class="btn btn-ghost" href="?view=results">Latest results</a>
+      </div>
+      <div class="conditions">
+        <div class="glass cond-pill">
+          <span class="label">Wind</span>
+          <span class="value">12 kt NW</span>
+        </div>
+        <div class="glass cond-pill">
+          <span class="label">Water</span>
+          <span class="value">18°C</span>
+        </div>
+        <div class="glass cond-pill">
+          <span class="label">Next start</span>
+          <span class="value accent">Sat 09:30</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TILE NAV / PAGE INDEX ============ -->
+  <div class="section-head">
+    <h2>Club instruments</h2>
+    <p>Each tile is a live view, wired to the same race sheet.</p>
+  </div>
+
+  <div class="tile-grid">
+    <a class="glass tile" href="?view=dashboard">
+      <div class="tile-icon">◎</div>
+      <h3>Fleet Dashboard</h3>
+      <p>Season standings, points and form across every skipper.</p>
+      <span class="tag">Updated live</span>
+    </a>
+
+  </div>
+</main>
 
 <script>
 // --- Configuration Settings ---
@@ -571,180 +617,6 @@ function triggerRecording() {
     }, RECORD_DURATION);
 }
 </script>
-
-<main>
-  <!-- ============ HERO ============ -->
-  <section class="hero">
-    <div>
-      <div class="eyebrow"><span class="dot"></span> Race day conditions live</div>
-      <h1>Every race,<br><em>tracked to the knot.</em></h1>
-      <p class="lede">
-        Results, standings and conditions for Harbour Light RC Sailing Club —
-        pulled live from the race book so the leaderboard is never out of date.
-      </p>
-      <div class="hero-actions">
-        <a class="btn btn-primary" href="?view=dashboard">Open dashboard →</a>
-        <a class="btn btn-ghost" href="?view=results">Latest results</a>
-      </div>
-      <div class="conditions">
-        <div class="glass cond-pill">
-          <span class="label">Wind</span>
-          <span class="value">12 kt NW</span>
-        </div>
-        <div class="glass cond-pill">
-          <span class="label">Water</span>
-          <span class="value">18°C</span>
-        </div>
-        <div class="glass cond-pill">
-          <span class="label">Next start</span>
-          <span class="value accent">Sat 09:30</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="binnacle-wrap">
-      <div class="glass binnacle">
-        <div class="binnacle-face">
-          <div class="binnacle-readout">
-            <div class="n">R14</div>
-            <div class="u">CURRENT RACE</div>
-          </div>
-          <div class="binnacle-needle"></div>
-          <div class="binnacle-hub"></div>
-          <span class="binnacle-label" style="top:8px; left:50%; transform:translateX(-50%);">N</span>
-          <span class="binnacle-label" style="bottom:8px; left:50%; transform:translateX(-50%);">S</span>
-          <span class="binnacle-label" style="right:6px; top:50%; transform:translateY(-50%);">E</span>
-          <span class="binnacle-label" style="left:6px; top:50%; transform:translateY(-50%);">W</span>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ LATEST FEED ============ -->
-  <!-- To make this dynamic: replace the static .finish-chip markup below with
-       a container div (e.g. id="feed-ribbon"), then in Apps Script call
-       google.script.run.withSuccessHandler(renderFeed).getLatestFinishOrder()
-       and build the same chip markup client-side from the returned array of
-       {position, sailor, sailNumber} objects. Server function reads the
-       most recent race's rows from your results sheet, sorted by position. -->
-  <div class="feed">
-    <div class="glass feed-card">
-      <div class="feed-head">
-        <div class="feed-title">
-          <span class="dot"></span>
-          <h2>Race 14 — finished</h2>
-        </div>
-        <span class="feed-meta">Finish order · updated 3 min ago</span>
-      </div>
-      <div class="ribbon">
-        <div class="finish-chip p1">
-          <div class="pos">1<small>st</small></div>
-          <div class="sailor">Alex Turner</div>
-          <div class="sail-no">SAIL 402</div>
-        </div>
-        <div class="finish-chip p2">
-          <div class="pos">2<small>nd</small></div>
-          <div class="sailor">Priya Nair</div>
-          <div class="sail-no">SAIL 118</div>
-        </div>
-        <div class="finish-chip p3">
-          <div class="pos">3<small>rd</small></div>
-          <div class="sailor">Sam Whitlock</div>
-          <div class="sail-no">SAIL 077</div>
-        </div>
-        <div class="finish-chip">
-          <div class="pos">4<small>th</small></div>
-          <div class="sailor">Jamie Cole</div>
-          <div class="sail-no">SAIL 231</div>
-        </div>
-        <div class="finish-chip">
-          <div class="pos">5<small>th</small></div>
-          <div class="sailor">Morgan Blake</div>
-          <div class="sail-no">SAIL 305</div>
-        </div>
-        <div class="finish-chip">
-          <div class="pos">6<small>th</small></div>
-          <div class="sailor">Ellie Ross</div>
-          <div class="sail-no">SAIL 019</div>
-        </div>
-        <div class="finish-chip">
-          <div class="pos">7<small>th</small></div>
-          <div class="sailor">Dan Okafor</div>
-          <div class="sail-no">SAIL 264</div>
-        </div>
-        <div class="finish-chip">
-          <div class="pos">8<small>th</small></div>
-          <div class="sailor">Tom Ferreira</div>
-          <div class="sail-no">SAIL 150</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ============ TILE NAV / PAGE INDEX ============ -->
-  <div class="section-head">
-    <h2>Club instruments</h2>
-    <p>Each tile is a live view, wired to the same race sheet.</p>
-  </div>
-
-  <div class="tile-grid">
-    <a class="glass tile" href="?view=dashboard">
-      <div class="tile-icon">◎</div>
-      <h3>Fleet Dashboard</h3>
-      <p>Season standings, points and form across every skipper.</p>
-      <span class="tag">Updated live</span>
-    </a>
-
-    <a class="glass tile" href="?view=individual">
-      <div class="tile-icon">▲</div>
-      <h3>Individual Performance</h3>
-      <p>Per-sailor race history, finishing trend and best results.</p>
-      <span class="tag">Pick a sailor</span>
-    </a>
-
-    <a class="glass tile" href="?view=results">
-      <div class="tile-icon">≡</div>
-      <h3>Race Results</h3>
-      <p>Full results sheet for every heat, sortable by race day.</p>
-      <span class="tag">Latest: R14</span>
-    </a>
-
-    <a class="glass tile" href="?view=calendar">
-      <div class="tile-icon">▦</div>
-      <h3>Race Calendar</h3>
-      <p>Upcoming race days, series dates and club events.</p>
-      <span class="tag">Next: Sat</span>
-    </a>
-
-    <a class="glass tile" href="?view=weather">
-      <div class="tile-icon">〜</div>
-      <h3>Weather &amp; Conditions</h3>
-      <p>Wind, tide and forecast for the sailing area.</p>
-      <span class="tag">Live feed</span>
-    </a>
-
-    <a class="glass tile" href="?view=fleet">
-      <div class="tile-icon">✦</div>
-      <h3>Fleet &amp; Classes</h3>
-      <p>Boat classes raced at the club and handicap notes.</p>
-      <span class="tag">Reference</span>
-    </a>
-
-    <a class="glass tile" href="?view=rules">
-      <div class="tile-icon">§</div>
-      <h3>Racing Rules</h3>
-      <p>Club-specific starts, scoring and right-of-way notes.</p>
-      <span class="tag">Reference</span>
-    </a>
-
-    <a class="glass tile" href="https://weebly-site-url.example/join">
-      <div class="tile-icon">+</div>
-      <h3>Join the Club</h3>
-      <p>New skipper? Find out how to enter your first race day.</p>
-      <span class="tag">Get started</span>
-    </a>
-  </div>
-</main>
 
 <footer>
   <span>© 2026 SMMC</span>
