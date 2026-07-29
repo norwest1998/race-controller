@@ -455,6 +455,123 @@
   </nav>
 </header>
 
+<a class="btn btn-primary" id="actionBtn" onclick="initiateSystem()">Enable Microphone→</a>
+<div id="status">Status: Waiting for user permission...</div>
+<audio id="audioPlayback" controls></audio>
+
+<script>
+// --- Configuration Settings ---
+const TRIGGER_WORD = "one";       // The specific word that starts the recording
+
+let recognition;
+let mediaRecorder;
+let audioChunks = [];
+let stream;
+
+const actionBtn = document.getElementById('actionBtn');
+const statusDiv = document.getElementById('status');
+const audioPlayback = document.getElementById('audioPlayback');
+
+async function initiateSystem() {
+    try {
+        // iOS requires user interaction to initialize audio stream captures
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        setupMediaRecorder();
+        setupSpeechRecognition();
+        
+        actionBtn.disabled = true;
+        actionBtn.style.background = '#34c759';
+        actionBtn.innerText = "System Listening";
+        statusDiv.innerText = `Status: Listening for the countdown word "${TRIGGER_WORD}"...`;
+    } catch (err) {
+        statusDiv.innerText = "Status: Microphone access denied or unsupported.";
+        console.error(err);
+    }
+}
+
+function setupSpeechRecognition() {
+    // Cross-browser prefixing support for iOS Safari
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (!SpeechRecognition) {
+        statusDiv.innerText = "Status: Speech Recognition not supported on this browser.";
+        return;
+    }
+
+    recognition = new SpeechRecognition();
+    recognition.continuous = true;        // Keep listening even if the user pauses
+    recognition.interimResults = true;    // Return text fragments live before the phrase ends
+    recognition.lang = 'en-US';
+
+    recognition.onresult = (event) => {
+        let liveTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+            liveTranscript += event.results[i][0].transcript;
+        }
+
+        // Clean text string for precise matching
+        const cleanText = liveTranscript.toLowerCase().trim();
+        console.log("Heard:", cleanText);
+
+        if (cleanText.includes(TRIGGER_WORD)) {
+            // Stop listening to voice so the recorder engine takes full system priority
+            recognition.stop(); 
+            triggerRecording();
+        }
+    };
+
+    // If the engine stops naturally due to absolute silence, restart it
+    recognition.onend = () => {
+        if (actionBtn.innerText === "System Listening") {
+            recognition.start();
+        }
+    };
+
+    recognition.start();
+}
+
+function setupMediaRecorder() {
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+
+    mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+            audioChunks.push(event.data);
+        }
+    };
+
+    mediaRecorder.onstop = () => {
+        // Package the raw audio buffers into an standard audio blob
+        const audioBlob = new Blob(audioChunks, { type: 'audio/mp4' }); // MP4 container works native on iOS
+        const audioUrl = URL.createObjectURL(audioBlob);
+        
+        audioPlayback.src = audioUrl;
+        audioPlayback.style.display = "block";
+        
+        statusDiv.innerText = "Status: Recording finished! Playback ready below.";
+        actionBtn.style.background = '#007aff';
+        actionBtn.innerText = "Restart Listener";
+        actionBtn.disabled = false;
+    };
+}
+
+function triggerRecording() {
+    statusDiv.innerText = "Status: 🔴 RECORDING START...";
+    audioPlayback.style.display = "none";
+    audioChunks = []; // Flush old data cache
+    
+    mediaRecorder.start();
+
+    // The core execution timer control loop
+    setTimeout(() => {
+        if (mediaRecorder.state === "recording") {
+            mediaRecorder.stop();
+            statusDiv.innerText = "Status: Processing audio file...";
+        }
+    }, RECORD_DURATION);
+}
+</script>
+
 <main>
   <!-- ============ HERO ============ -->
   <section class="hero">
